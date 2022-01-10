@@ -8,6 +8,7 @@ import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.data.mongodb.core.mapping.Field;
 
+import java.time.LocalDateTime;
 import java.util.Date;
 
 @Getter
@@ -33,13 +34,15 @@ public class Product {
     @Field(name = "currency")
     private String currency;
     @Field(name = "amount")
-    private double amount;
+    private double amount = 0;
     @Field(name = "maintenance_commission")
     private double maintenanceCommission;
+    @Field(name = "maintenance_commission_day")
+    private LocalDateTime maintenanceCommissionDay;
     @Field(name = "max_transact_number")
     private int maxTransactNumber;
     @Field(name = "transact_number_day")
-    private Date transactNumberDay;
+    private LocalDateTime transactNumberDay;
     @Field(name = "credit_limit")
     private double creditLimit;
     @Field(name = "customer")

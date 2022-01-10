@@ -5,5 +5,5 @@ spring:
     config:
       enabled: true
       uri: http://localhost:8001
-variable:
-  state: active
+      username: root
+      password: s3cr3t
