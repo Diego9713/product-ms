@@ -1,5 +1,6 @@
 package bootcamp.com.productms.business.helper;
 
+import bootcamp.com.productms.model.CardDto;
 import bootcamp.com.productms.model.CustomerDto;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -11,15 +12,28 @@ public class WebClientCustomerHelper {
     @Autowired
     private WebClient webClient;
 
-    public Mono<CustomerDto> findCustomer(String id){
+    /**
+     * Method to search for a customer by id;
+     *
+     * @param id -> customer identifier.
+     * @return object customer find.
+     */
+    public Mono<CustomerDto> findCustomer(String id) {
         return webClient.get()
                 .uri("/api/v1/customers/" + id)
                 .retrieve()
                 .bodyToMono(CustomerDto.class);
     }
-    public Mono<CustomerDto> findCustomerByDni(String dni){
+
+    /**
+     * Method to search for a customer by dni;
+     *
+     * @param dni -> customer document number.
+     * @return object customer find.
+     */
+    public Mono<CustomerDto> findCustomerByDni(String dni) {
         return webClient.get()
-                .uri("/api/v1/customers/document_number/" + dni)
+                .uri("/api/v1/customers/document-number/" + dni)
                 .retrieve()
                 .bodyToMono(CustomerDto.class);
     }
