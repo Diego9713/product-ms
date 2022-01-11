@@ -1,7 +1,7 @@
 package bootcamp.com.productms.business.helper;
 
-import bootcamp.com.productms.model.Customer;
-import bootcamp.com.productms.model.Product;
+import bootcamp.com.productms.model.CardDto;
+import bootcamp.com.productms.model.CustomerDto;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
@@ -12,18 +12,30 @@ public class WebClientCustomerHelper {
     @Autowired
     private WebClient webClient;
 
-    public Mono<Customer> findCustomer(String id){
+    /**
+     * Method to search for a customer by id;
+     *
+     * @param id -> customer identifier.
+     * @return object customer find.
+     */
+    public Mono<CustomerDto> findCustomer(String id) {
         return webClient.get()
                 .uri("/api/v1/customers/" + id)
                 .retrieve()
-                .bodyToMono(Customer.class);
+                .bodyToMono(CustomerDto.class);
     }
-    public Mono<Customer> saveCustomerWithProduct(Product product){
-        return webClient.post()
-                .uri("/api/v1/customers/product")
-                .body(Mono.just(product),Product.class)
+
+    /**
+     * Method to search for a customer by dni;
+     *
+     * @param dni -> customer document number.
+     * @return object customer find.
+     */
+    public Mono<CustomerDto> findCustomerByDni(String dni) {
+        return webClient.get()
+                .uri("/api/v1/customers/document-number/" + dni)
                 .retrieve()
-                .bodyToMono(Customer.class);
+                .bodyToMono(CustomerDto.class);
     }
 
 }

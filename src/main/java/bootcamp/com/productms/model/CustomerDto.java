@@ -9,7 +9,7 @@ import lombok.Setter;
 @Setter
 @AllArgsConstructor
 @NoArgsConstructor
-public class Customer {
+public class CustomerDto {
     private String id;
     private String documentType;
     private String documentNumber;
@@ -22,6 +22,5 @@ public class Customer {
     private String civilStatus;
     private String email;
     private boolean owner;
-    private Product product;
     private String status;
 }
