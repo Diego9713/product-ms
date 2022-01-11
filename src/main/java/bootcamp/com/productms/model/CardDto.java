@@ -9,12 +9,13 @@ import lombok.Setter;
 @Setter
 @AllArgsConstructor
 @NoArgsConstructor
-public class ProductCustomerDto {
+public class CardDto {
     private String id;
-    private String accountType;
-    private String accountNumber;
-    private String currency;
-    private double amount;
-    private double creditLimit;
+    private String productId;
+    private String cardNumber;
+    private String cardType;
+    private String cvv;
+    private int month;
+    private int year;
     private String status;
 }
