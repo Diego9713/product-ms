@@ -10,8 +10,8 @@ import org.springframework.data.mongodb.repository.config.EnableReactiveMongoRep
 @EnableReactiveMongoRepositories
 public class ProductMsApplication {
 
-	public static void main(String[] args) {
-		SpringApplication.run(ProductMsApplication.class, args);
-	}
+  public static void main(String[] args) {
+    SpringApplication.run(ProductMsApplication.class, args);
+  }
 
 }
