@@ -4,13 +4,16 @@ import bootcamp.com.productms.business.IProductService;
 import bootcamp.com.productms.business.helper.FilterProductHelper;
 import bootcamp.com.productms.business.helper.WebClientCardHelper;
 import bootcamp.com.productms.business.helper.WebClientCustomerHelper;
-import bootcamp.com.productms.model.dto.CustomerDto;
 import bootcamp.com.productms.model.Product;
+import bootcamp.com.productms.model.dto.CustomerDto;
 import bootcamp.com.productms.model.dto.ProductCustomerDto;
 import bootcamp.com.productms.model.dto.ProductDto;
+import bootcamp.com.productms.model.dto.ProductSpdDto;
 import bootcamp.com.productms.repository.IProductRepository;
 import bootcamp.com.productms.utils.AppUtil;
 import bootcamp.com.productms.utils.CommonConstants;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -65,6 +68,44 @@ public class ProductService implements IProductService {
   }
 
   /**
+   * Lists the daily averages by month.
+   *
+   * @param id       -> client identifier.
+   * @param dateTime -> registration date.
+   * @return a product.
+   */
+  @Override
+  @Transactional(readOnly = true)
+  public Flux<ProductSpdDto> findAverageDailyBalance(String id, String dateTime) {
+    LocalDate localDate = LocalDate.parse(dateTime);
+    return productRepository.findByCustomerAndAverageDailyBalanceDay(id, localDate)
+      .map(AppUtil::entityToProductSpdDto);
+  }
+
+  /**
+   * Method to generate the average daily balance per month per product.
+   *
+   * @param id -> product identifier.
+   * @return an object with the daily average balance.
+   */
+  @Override
+  public Mono<ProductDto> generateSpd(String id) {
+    return productRepository.findById(id).flatMap(product -> {
+      if (LocalDateTime.now().getHour() > 18 && LocalDate.now().getMonth()
+          .equals(product.getAverageDailyBalanceDay().getMonth())) {
+        product.setAverageDailyBalance(product.getAmount() + product.getAverageDailyBalance());
+        product.setMinimumAverageAmount(product.getAverageDailyBalance() / LocalDate.now().getDayOfMonth());
+      } else {
+        if (!LocalDate.now().getMonth().equals(product.getAverageDailyBalanceDay().getMonth())) {
+          product.setAverageDailyBalanceDay(LocalDate.now());
+          product.setAverageDailyBalance(product.getAmount());
+        }
+      }
+      return productRepository.save(product).map(AppUtil::entityToProductDto);
+    });
+  }
+
+  /**
    * Method to search for a product by account number.
    *
    * @param id -> is account number of product.
@@ -108,16 +149,24 @@ public class ProductService implements IProductService {
     log.info("save product >>>");
     Mono<CustomerDto> customer = webClientCustomerHelper.findCustomer(product.getCustomer());
 
-    Mono<ProductDto> filterProduct = customer.flatMap(customerDto -> Mono.just(filterProductHelper.createObjectProduct(product, customerDto)));
+    Mono<ProductDto> filterProduct = customer.flatMap(customerDto ->
+        Mono.just(filterProductHelper.createObjectProduct(product, customerDto)));
 
     Mono<List<Product>> productList = customer.flatMap(findCustomer -> productRepository
-            .findByCustomer(findCustomer.getId())
-            .filter(findProduct -> findProduct.getStatus().equalsIgnoreCase(CommonConstants.ACTIVE.name()))
-            .collectList());
+        .findByCustomer(findCustomer.getId())
+        .filter(findProduct -> findProduct.getStatus().equalsIgnoreCase(CommonConstants.ACTIVE.name()))
+        .collectList());
 
-    Mono<Boolean> isSave = customer.flatMap(findCustomer -> productList.flatMap(findProductList -> filterProduct.flatMap(productDto -> Mono.just(filterProductHelper.isSave(findCustomer, productDto, findProductList)))));
+    Mono<Boolean> isSave = customer
+        .flatMap(findCustomer -> productList
+          .flatMap(findProductList -> filterProduct
+            .flatMap(productDto -> Mono.just(filterProductHelper
+              .isSave(findCustomer, productDto, findProductList)))));
+
     Mono<Product> newProductFilter = filterProduct.map(AppUtil::productDtoToEntity);
-    return isSave.flatMap(save -> Boolean.TRUE.equals(save) ? newProductFilter.flatMap(productRepository::save) : Mono.empty())
+    return isSave.flatMap(save -> Boolean.TRUE.equals(save)
+        ? newProductFilter.flatMap(productRepository::save)
+        : Mono.empty())
       .map(AppUtil::entityToProductDto);
 
   }
@@ -147,14 +196,14 @@ public class ProductService implements IProductService {
         product.setCustomer(customerDto.getId());
         product.setId(null);
       })
-        .flatMap(product -> filterProductHelper.filterProductToCustomer(customerDto)
-          .flatMap(isPermission -> {
-            if (Boolean.TRUE.equals(isPermission)) {
-              return productRepository.save(product);
-            } else {
-              return Mono.empty();
-            }
-          })) : Mono.empty()))
+       .flatMap(product -> filterProductHelper.filterProductToCustomer(customerDto)
+         .flatMap(isPermission -> {
+           if (Boolean.TRUE.equals(isPermission)) {
+             return productRepository.save(product);
+           } else {
+             return Mono.empty();
+           }
+         })) : Mono.empty()))
       .map(AppUtil::entityToProductDto);
 
   }
@@ -173,7 +222,8 @@ public class ProductService implements IProductService {
     Mono<CustomerDto> customer = webClientCustomerHelper.findCustomer(product.getCustomer());
     return productRepository.findById(id)
       .switchIfEmpty(Mono.empty())
-      .flatMap(findByProduct -> customer.flatMap(customerDto -> filterProductHelper.updateObjectProduct(product, findByProduct,customerDto))
+      .flatMap(findByProduct -> customer.flatMap(customerDto ->
+          filterProductHelper.updateObjectProduct(product, findByProduct, customerDto))
         .map(AppUtil::productDtoToEntity))
       .flatMap(productRepository::save).map(AppUtil::entityToProductDto);
   }

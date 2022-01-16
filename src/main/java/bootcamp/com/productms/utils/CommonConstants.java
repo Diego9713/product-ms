@@ -7,5 +7,4 @@ public enum CommonConstants {
   CREDIT,
   ACTIVE,
   INACTIVE
-
 }
