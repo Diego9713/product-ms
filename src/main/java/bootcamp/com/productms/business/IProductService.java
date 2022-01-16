@@ -1,26 +1,31 @@
 package bootcamp.com.productms.business;
 
 import bootcamp.com.productms.model.Product;
-import bootcamp.com.productms.model.ProductCustomerDto;
-import bootcamp.com.productms.model.ProductDto;
+import bootcamp.com.productms.model.dto.ProductCustomerDto;
+import bootcamp.com.productms.model.dto.ProductDto;
+import bootcamp.com.productms.model.dto.ProductSpdDto;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 public interface IProductService {
 
-    Flux<ProductDto> findAllProduct();
+  Flux<ProductDto> findAllProduct();
 
-    Mono<Product> findByIdProduct(String id);
+  Mono<Product> findByIdProduct(String id);
 
-    Flux<ProductDto> findByProductNumber(String id);
+  Flux<ProductSpdDto> findAverageDailyBalance(String id, String dateTime);
 
-    Flux<ProductCustomerDto> findProductByCustomer(String customerId);
+  Mono<ProductDto> generateSpd(String id);
 
-    Mono<ProductDto> createProduct(Product product);
+  Flux<ProductDto> findByProductNumber(String id);
 
-    Mono<ProductDto> registerProductToCustomer(String accountNumber, String dni);
+  Flux<ProductCustomerDto> findProductByCustomer(String customerId);
 
-    Mono<Product> updateProduct(Product product, String id);
+  Mono<ProductDto> createProduct(ProductDto product);
 
-    Mono<ProductDto> removeProduct(String id);
+  Mono<ProductDto> registerProductToCustomer(String accountNumber, String dni);
+
+  Mono<ProductDto> updateProduct(ProductDto product, String id);
+
+  Mono<ProductDto> removeProduct(String id);
 }
