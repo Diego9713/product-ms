@@ -1,7 +1,7 @@
 package bootcamp.com.productms.model;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.Date;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -21,11 +21,11 @@ public class Product {
   @Field(name = "account_number")
   private String accountNumber;
   @Field(name = "created_at")
-  private Date createdAt;
+  private LocalDateTime createdAt;
   @Field(name = "created_by")
   private String createdBy;
   @Field(name = "update_at")
-  private Date updateAt;
+  private LocalDate updateAt;
   @Field(name = "update_by")
   private String updateBy;
   @Field(name = "currency")
@@ -36,6 +36,8 @@ public class Product {
   private double minimumAverageAmount = 0;
   @Field(name = "average_daily_balance")
   private double averageDailyBalance = 0;
+  @Field(name = "average_daily_balance_day")
+  private LocalDate averageDailyBalanceDay;
   @Field(name = "maintenance_commission")
   private double maintenanceCommission;
   @Field(name = "maintenance_commission_day")

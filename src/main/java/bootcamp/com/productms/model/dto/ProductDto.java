@@ -1,7 +1,7 @@
 package bootcamp.com.productms.model.dto;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.Date;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -23,12 +23,13 @@ public class ProductDto {
   private double creditLimit;
   private String customer;
   private String status;
-  private Date createdAt;
+  private LocalDateTime createdAt;
   private String createdBy;
-  private Date updateAt;
+  private LocalDate updateAt;
   private String updateBy;
   private double minimumAverageAmount = 0;
   private double averageDailyBalance = 0;
+  private LocalDate averageDailyBalanceDay;
 }
 
 
