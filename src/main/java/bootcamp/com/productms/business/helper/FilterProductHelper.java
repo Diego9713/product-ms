@@ -89,7 +89,7 @@ public class FilterProductHelper {
           }
         }
         LocalDateTime commission = LocalDateTime.now();
-        product.setMaintenanceCommissionDay(commission.plusDays(30 - commission.getDayOfMonth()));
+        product.setMaintenanceCommissionDay(commission.plusDays((long) 30 - commission.getDayOfMonth()));
         break;
       case "FIXED_TERM":
         product.setMaxTransactNumber(1);
