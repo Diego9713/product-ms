@@ -89,6 +89,7 @@ public class ProductService implements IProductService {
    * @return an object with the daily average balance.
    */
   @Override
+  @Transactional
   public Mono<ProductDto> generateSpd(String id) {
     return productRepository.findById(id).flatMap(product -> {
       if (LocalDateTime.now().getHour() > 18 && LocalDate.now().getMonth()
