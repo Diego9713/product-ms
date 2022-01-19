@@ -23,8 +23,6 @@ import reactor.core.publisher.Mono;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @AutoConfigureWebTestClient(timeout = "20000")
@@ -138,8 +136,8 @@ class ProductControllerTest {
   @Test
   @DisplayName("GET -> /api/v1/products/averagedailydalance/{customerId}")
   void findAverageDailyBalance() {
-    when(productService.findAverageDailyBalance(customer,"2022-01-15")).thenReturn(Flux.just(productSpdDto));
-    WebTestClient.ResponseSpec responseSpec = webTestClient.get().uri("/api/v1/products/averagedailydalance/" + customer+"?date=2022-01-15")
+    when(productService.findAverageDailyBalance(customer, "2022-01-15")).thenReturn(Flux.just(productSpdDto));
+    WebTestClient.ResponseSpec responseSpec = webTestClient.get().uri("/api/v1/products/averagedailydalance/" + customer + "?date=2022-01-15")
       .accept(MediaType.APPLICATION_JSON)
       .exchange();
 
@@ -180,5 +178,25 @@ class ProductControllerTest {
   void removeProduct() {
     when(productService.removeProduct(id)).thenReturn(Mono.just(productDto));
     Assertions.assertNotNull(productController.removeProduct(id));
+  }
+
+  @Test
+  void fallBackPostProduct() {
+    Assertions.assertNotNull(productController.fallBackPostProduct(productDto, new RuntimeException("")));
+  }
+
+  @Test
+  void fallBackPostProductRegisterCustomer() {
+    Assertions.assertNotNull(productController.fallBackPostProductRegisterCustomer(accountNumber, "1254875", new RuntimeException("")));
+  }
+
+  @Test
+  void fallBackPutProduct() {
+    Assertions.assertNotNull(productController.fallBackPutProduct(id, productDto, new RuntimeException("")));
+  }
+
+  @Test
+  void fallBackDeleteProduct() {
+    Assertions.assertNotNull(productController.fallBackDeleteProduct(id, new RuntimeException("")));
   }
 }
