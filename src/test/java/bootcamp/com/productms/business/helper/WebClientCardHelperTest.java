@@ -32,6 +32,14 @@ class WebClientCardHelperTest {
     cardDto.setMonth(month);
     cardDto.setYear(year);
     cardDto.setStatus(status);
+    cardDto.getId();
+    cardDto.getCardType();
+    cardDto.getProductId();
+    cardDto.getCardNumber();
+    cardDto.getMonth();
+    cardDto.getStatus();
+    cardDto.getCvv();
+    cardDto.getYear();
 
   }
   @Test

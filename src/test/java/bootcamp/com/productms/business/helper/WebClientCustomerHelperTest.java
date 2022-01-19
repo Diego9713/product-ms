@@ -45,6 +45,19 @@ class WebClientCustomerHelperTest {
     customerDto.setEmail(email);
     customerDto.setOwner(owner);
     customerDto.setStatus(status);
+
+    customerDto.getId();
+    customerDto.getDocumentType();
+    customerDto.getDocumentNumber();
+    customerDto.getCustomerType();
+    customerDto.getFirstName();
+    customerDto.getLastName();
+    customerDto.getAddress();
+    customerDto.getReferences();
+    customerDto.getPhoneNumber();
+    customerDto.getCivilStatus();
+    customerDto.getEmail();
+    customerDto.getStatus();
   }
   @Test
   void findCustomer() {
