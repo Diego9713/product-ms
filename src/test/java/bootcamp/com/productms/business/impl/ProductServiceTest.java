@@ -55,7 +55,9 @@ class ProductServiceTest {
   private static final ProductSpdDto productSpdDto = new ProductSpdDto();
   private static final String id = "61db64d731dec743727907f3";
   private static final String accountType = "SAVING";
-  private static final String accountNumber = "d85c241a-2eb7-40da-938c-097f30d3756f";
+  private static final String accountNumber = "d558f2fb-dc37-4b32-ba9f-88b31d8efe10";
+  private static final String subAccountNumber = "d558f2fb-dc37-4b32-ba9f-88b31d8efe10";
+  private static final int level = 1;
   private static final String currency = "PEN";
   private static final double amount = 6300;
   private static final double maintenanceCommission = 0;
@@ -68,6 +70,7 @@ class ProductServiceTest {
   private static final LocalDateTime createdAt = LocalDateTime.now();
   private static final String createdBy = "pedro";
   private static final LocalDate updateAt = LocalDate.now();
+  private static final LocalDate expiredDate = LocalDate.parse("2023-01-19");
   private static final String updateBy = "pedro";
   private static final double minimumAverageAmount = 0;
   private static final double averageDailyBalance = 0;
@@ -108,6 +111,9 @@ class ProductServiceTest {
     productDto.setMinimumAverageAmount(minimumAverageAmount);
     productDto.setAverageDailyBalance(averageDailyBalance);
     productDto.setAverageDailyBalanceDay(averageDailyBalanceDay);
+    productDto.setSubAccountNumber(subAccountNumber);
+    productDto.setLevel(level);
+    productDto.setExpiredDate(expiredDate);
                         /**Customer**/
     customerDto.setId(idCustomer);
     customerDto.setDocumentType(documentType);
@@ -187,14 +193,14 @@ class ProductServiceTest {
     when(webClientCustomerHelper.findCustomer(customer)).thenReturn(Mono.just(customerDto));
     when(productRepository.findByCustomer(customer)).thenReturn(Flux.just(product));
     when(productRepository.save(product)).thenReturn(Mono.just(product));
-    when(filterProductHelper.createObjectProduct(productDto,customerDto)).thenReturn(productDto);
+    when(filterProductHelper.createObjectProduct(productDto,customerDto,productDtoList)).thenReturn(productDto);
     when(filterProductHelper.isSave(customerDto,productDto,productDtoList)).thenReturn(Boolean.TRUE);
     Assertions.assertNotNull(productService.createProduct(productDto));
   }
 
   @Test
   void registerProductToCustomer() {
-    when(productRepository.findByAccountNumber(accountNumber)).thenReturn(Flux.just(product));
+    when(productRepository.findBySubAccountNumber(subAccountNumber)).thenReturn(Flux.just(product));
     when(webClientCustomerHelper.findCustomerByDni(documentNumber)).thenReturn(Mono.just(customerDto));
     when(productRepository.save(product)).thenReturn(Mono.just(product));
     when(filterProductHelper.filterProductToCustomer(customerDto)).thenReturn(Mono.just(Boolean.TRUE));

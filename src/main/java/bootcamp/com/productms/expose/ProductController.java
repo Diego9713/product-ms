@@ -104,15 +104,16 @@ public class ProductController {
   /**
    * Method to register an account to multiple clients.
    *
-   * @param account -> account identifier.
+   * @param subAccount -> account identifier.
    * @param dni     -> customer document.
    * @return account register with customer.
    */
   @CircuitBreaker(name = "postProductRegisterCustomerCB", fallbackMethod = "fallBackPostProductRegisterCustomer")
   @PostMapping("/registercustomer")
-  public Mono<ResponseEntity<ProductDto>> registerProductToCustomer(@RequestParam(name = "account") String account,
+  public Mono<ResponseEntity<ProductDto>> registerProductToCustomer(@RequestParam(name = "subaccount") String subAccount,
                                                                     @RequestParam(name = "dni") String dni) {
-    return productService.registerProductToCustomer(account, dni)
+    return productService.registerProductToCustomer(subAccount, dni)
+
       .flatMap(p -> Mono.just(ResponseEntity.ok().body(p)))
       .switchIfEmpty(Mono.just(ResponseEntity.badRequest().build()));
   }
