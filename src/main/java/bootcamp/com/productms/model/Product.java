@@ -20,14 +20,10 @@ public class Product {
   private String accountType;
   @Field(name = "account_number")
   private String accountNumber;
-  @Field(name = "created_at")
-  private LocalDateTime createdAt;
-  @Field(name = "created_by")
-  private String createdBy;
-  @Field(name = "update_at")
-  private LocalDate updateAt;
-  @Field(name = "update_by")
-  private String updateBy;
+  @Field(name = "sub_account_number")
+  private String subAccountNumber;
+  @Field(name = "level")
+  private int level = 1;
   @Field(name = "currency")
   private String currency;
   @Field(name = "amount")
@@ -48,8 +44,18 @@ public class Product {
   private LocalDateTime transactNumberDay;
   @Field(name = "credit_limit")
   private double creditLimit;
+  @Field(name = "expired_date")
+  private LocalDate expiredDate;
   @Field(name = "customer")
   private String customer;
+  @Field(name = "created_at")
+  private LocalDateTime createdAt;
+  @Field(name = "created_by")
+  private String createdBy;
+  @Field(name = "update_at")
+  private LocalDate updateAt;
+  @Field(name = "update_by")
+  private String updateBy;
   @Field(name = "status")
   private String status;
 }

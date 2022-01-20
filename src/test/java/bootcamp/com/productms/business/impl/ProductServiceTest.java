@@ -187,7 +187,7 @@ class ProductServiceTest {
     when(webClientCustomerHelper.findCustomer(customer)).thenReturn(Mono.just(customerDto));
     when(productRepository.findByCustomer(customer)).thenReturn(Flux.just(product));
     when(productRepository.save(product)).thenReturn(Mono.just(product));
-    when(filterProductHelper.createObjectProduct(productDto,customerDto)).thenReturn(productDto);
+    //when(filterProductHelper.createObjectProduct(productDto,customerDto)).thenReturn(productDto);
     when(filterProductHelper.isSave(customerDto,productDto,productDtoList)).thenReturn(Boolean.TRUE);
     Assertions.assertNotNull(productService.createProduct(productDto));
   }

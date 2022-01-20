@@ -13,25 +13,52 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
 
 @Component
 public class FilterProductHelper {
+
   /**
    * Method to create a product object.
    *
    * @param product -> is the product entered by the user.
    * @return the product complete.
    */
-  public ProductDto createObjectProduct(ProductDto product, CustomerDto customerDto) {
-    product.setAccountNumber(UUID.randomUUID().toString());
+  public ProductDto createObjectProduct(ProductDto product, CustomerDto customerDto, List<Product> productDtoList) {
     product.setCreatedAt(LocalDateTime.now());
     product.setUpdateAt(LocalDate.now());
     product.setStatus(CommonConstants.ACTIVE.name());
     product.setAccountType(product.getAccountType().toUpperCase());
-    return filterProduct(product, customerDto);
+    ProductDto productDto = addAccountAndLevel(product, productDtoList);
+    return filterProduct(productDto, customerDto);
   }
+
+  /**
+   * Method to assign the account number, sub_account and level.
+   *
+   * @param product        -> is the product entered by the user.
+   * @param productDtoList -> number of products created by the customer.
+   * @return the product complete.
+   */
+  public ProductDto addAccountAndLevel(ProductDto product, List<Product> productDtoList) {
+
+    ProductDto productDto = new ProductDto();
+
+    if (productDtoList.isEmpty()) {
+      product.setAccountNumber(UUID.randomUUID().toString());
+      product.setSubAccountNumber(product.getAccountNumber());
+      product.setLevel(1);
+    } else {
+      product.setAccountNumber(productDtoList.get(0).getAccountNumber());
+      product.setSubAccountNumber(productDtoList.get(0).getAccountNumber() + " - " + (productDtoList.size() + 1));
+      product.setLevel(productDtoList.size() + 1);
+    }
+    BeanUtils.copyProperties(product, productDto);
+    return productDto;
+  }
+
 
   /**
    * Method to update a product object.
@@ -41,7 +68,10 @@ public class FilterProductHelper {
    * @return the product complete.
    */
   public Mono<ProductDto> updateObjectProduct(ProductDto product, Product findProduct, CustomerDto customerDto) {
+    product.setId(findProduct.getId());
     product.setAccountNumber(findProduct.getAccountNumber());
+    product.setSubAccountNumber(findProduct.getSubAccountNumber());
+    product.setLevel(findProduct.getLevel());
     product.setCreatedAt(findProduct.getCreatedAt());
     product.setUpdateAt(LocalDate.now());
     product.setStatus(product.getStatus().toUpperCase());
@@ -66,6 +96,7 @@ public class FilterProductHelper {
         product.setTransactNumberDay(null);
         product.setMaintenanceCommissionDay(null);
         product.setAverageDailyBalanceDay(LocalDate.now());
+        product.setExpiredDate(null);
         if (customerDto.getCustomerType().equalsIgnoreCase(ConstantsCustomerPersonal.PERSONAL_VIP.name())) {
           product.setAverageDailyBalance(product.getAmount());
           product.setMinimumAverageAmount(product.getAmount());
@@ -81,6 +112,7 @@ public class FilterProductHelper {
         product.setMinimumAverageAmount(0);
         product.setAverageDailyBalance(product.getAmount());
         product.setAverageDailyBalanceDay(LocalDate.now());
+        product.setExpiredDate(null);
         if (product.getMaintenanceCommission() < 0 || product.getMaintenanceCommission() == 0) {
           if (customerDto.getCustomerType().equalsIgnoreCase(ConstantsCustomerBusiness.BUSINESS_PYME.name())) {
             product.setMaintenanceCommission(0);
@@ -99,6 +131,7 @@ public class FilterProductHelper {
         product.setAverageDailyBalance(product.getAmount());
         product.setAverageDailyBalanceDay(LocalDate.now());
         product.setMaintenanceCommissionDay(null);
+        product.setExpiredDate(null);
         LocalDateTime transactDay = LocalDateTime.now();
         product.setTransactNumberDay(transactDay.plusDays(10));
         break;
@@ -110,8 +143,9 @@ public class FilterProductHelper {
         product.setTransactNumberDay(LocalDateTime.now());
         product.setAverageDailyBalanceDay(LocalDate.now());
         product.setMaintenanceCommissionDay(null);
-        if (product.getCreditLimit() <= 0) {
+        if (product.getCreditLimit() <= 0 || product.getExpiredDate() == null) {
           product.setCreditLimit(1000);
+          product.setExpiredDate(LocalDate.now().plusYears(1));
         }
         break;
     }
@@ -122,7 +156,7 @@ public class FilterProductHelper {
    * Method to condition the storage of the product.
    *
    * @param customerDto -> is the wanted customer.
-   * @param product     -> is the product entered by the user.
+   * @param product     -> is the product filter.
    * @param productList -> is the list of accounts assigned to is customer.
    * @return a condition for the storage of the product.
    */
@@ -202,7 +236,8 @@ public class FilterProductHelper {
   public boolean filterAccountType(List<Product> productList) {
     boolean isSave = false;
     for (Product product : productList) {
-      if (product.getAccountType().equalsIgnoreCase(CommonConstants.CREDIT.name())) {
+      if (product.getAccountType().equalsIgnoreCase(CommonConstants.CREDIT.name())
+          && product.getExpiredDate().isAfter(LocalDate.now())) {
         isSave = true;
         break;
       }
@@ -251,10 +286,13 @@ public class FilterProductHelper {
       isPermission = true;
     } else {
       for (Product product : productList) {
-        if (product.getAccountType().equalsIgnoreCase(CommonConstants.CURRENT.name())
-            || product.getAccountType().equalsIgnoreCase(CommonConstants.CREDIT.name())) {
-          isPermission = true;
+
+        if (product.getAccountType().equalsIgnoreCase(CommonConstants.CREDIT.name())
+            && product.getExpiredDate().isBefore(LocalDate.now())) {
+          isPermission = false;
           break;
+        } else {
+          isPermission = true;
         }
       }
     }
@@ -270,8 +308,11 @@ public class FilterProductHelper {
    */
   public boolean filterPermissionPersonal(List<Product> productList, ProductDto otherProduct) {
     boolean isPermission;
+    //change
     if (productList.stream()
-        .anyMatch(p -> p.getAccountType().equalsIgnoreCase(CommonConstants.CREDIT.name()) && productList.size() != 1)) {
+        .anyMatch(p -> p.getAccountType().equalsIgnoreCase(CommonConstants.CREDIT.name())
+          && p.getExpiredDate().isAfter(LocalDate.now())
+          && productList.size() != 1)) {
       isPermission = otherProduct.getAccountType().equalsIgnoreCase(CommonConstants.FIXED_TERM.name());
     } else {
       isPermission = true;
@@ -289,12 +330,18 @@ public class FilterProductHelper {
    */
   public boolean filterPermissionBusiness(List<Product> productList, ProductDto otherProduct) {
     boolean isPermission = false;
-    if (productList.size() == 1 && !otherProduct.getAccountType().equalsIgnoreCase(CommonConstants.CREDIT.name())
+    if (productList.size() == 1
+        && !otherProduct.getAccountType().equalsIgnoreCase(CommonConstants.CREDIT.name())
         && Arrays.stream(ConstantsPersonal.values())
         .anyMatch(p -> p.toString().equalsIgnoreCase(otherProduct.getAccountType()))) {
-      isPermission = productList.stream().noneMatch(p ->
-        p.getAccountType().equalsIgnoreCase(CommonConstants.SAVING.name())
-          || p.getAccountType().equalsIgnoreCase(CommonConstants.CURRENT.name()));
+      //change
+      if (productList.stream().anyMatch(product -> product.getAccountType()
+          .equalsIgnoreCase(CommonConstants.CREDIT.name()) && product.getExpiredDate().isAfter(LocalDate.now()))) {
+        isPermission = productList.stream().noneMatch(p ->
+          p.getAccountType().equalsIgnoreCase(CommonConstants.SAVING.name())
+            || p.getAccountType().equalsIgnoreCase(CommonConstants.CURRENT.name()));
+      }
+
     } else {
       Optional<Product> productDtoMono = productList.stream().findFirst();
       if (productList.size() == 1 && otherProduct.getAccountType().equalsIgnoreCase(CommonConstants.CREDIT.name())
@@ -302,7 +349,11 @@ public class FilterProductHelper {
           .equalsIgnoreCase(CommonConstants.CREDIT.name()))) {
         isPermission = true;
       }
-      if (productList.size() == 1 && otherProduct.getAccountType().equalsIgnoreCase(CommonConstants.SAVING.name())) {
+      //change
+      if (productList.size() == 1
+          && productList.stream().anyMatch(product -> product.getExpiredDate().isAfter(LocalDate.now()))
+          && otherProduct.getAccountType().equalsIgnoreCase(CommonConstants.SAVING.name())
+          || otherProduct.getAccountType().equalsIgnoreCase(CommonConstants.CURRENT.name())) {
         isPermission = true;
       }
     }
