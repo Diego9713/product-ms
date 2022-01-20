@@ -113,6 +113,7 @@ public class ProductController {
   public Mono<ResponseEntity<ProductDto>> registerProductToCustomer(@RequestParam(name = "subaccount") String subAccount,
                                                                     @RequestParam(name = "dni") String dni) {
     return productService.registerProductToCustomer(subAccount, dni)
+
       .flatMap(p -> Mono.just(ResponseEntity.ok().body(p)))
       .switchIfEmpty(Mono.just(ResponseEntity.badRequest().build()));
   }
