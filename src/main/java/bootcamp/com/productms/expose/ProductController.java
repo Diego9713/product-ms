@@ -5,6 +5,7 @@ import bootcamp.com.productms.model.Product;
 import bootcamp.com.productms.model.dto.ProductCustomerDto;
 import bootcamp.com.productms.model.dto.ProductDto;
 import bootcamp.com.productms.model.dto.ProductSpdDto;
+import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.ResponseEntity;
@@ -67,7 +68,8 @@ public class ProductController {
    * @return a product.
    */
   @GetMapping("/averagedailydalance/{customerId}")
-  public Flux<ProductSpdDto> findAverageDailyBalance(@PathVariable("customerId") String customerId, @RequestParam("date") String dateTime) {
+  public Flux<ProductSpdDto> findAverageDailyBalance(@PathVariable("customerId") String customerId,
+                                                     @RequestParam("date") String dateTime) {
     return productService.findAverageDailyBalance(customerId, dateTime);
   }
 
@@ -91,6 +93,7 @@ public class ProductController {
    * @param product -> object with account data.
    * @return the product saved.
    */
+  @CircuitBreaker(name = "postProductCB", fallbackMethod = "fallBackPostProduct")
   @PostMapping("")
   public Mono<ResponseEntity<ProductDto>> saveProduct(@RequestBody ProductDto product) {
     return productService.createProduct(product)
@@ -101,13 +104,15 @@ public class ProductController {
   /**
    * Method to register an account to multiple clients.
    *
-   * @param account -> account identifier.
+   * @param subAccount -> account identifier.
    * @param dni     -> customer document.
    * @return account register with customer.
    */
+  @CircuitBreaker(name = "postProductRegisterCustomerCB", fallbackMethod = "fallBackPostProductRegisterCustomer")
   @PostMapping("/registercustomer")
-  public Mono<ResponseEntity<ProductDto>> registerProductToCustomer(@RequestParam(name = "account") String account, @RequestParam(name = "dni") String dni) {
-    return productService.registerProductToCustomer(account, dni)
+  public Mono<ResponseEntity<ProductDto>> registerProductToCustomer(@RequestParam(name = "subaccount") String subAccount,
+                                                                    @RequestParam(name = "dni") String dni) {
+    return productService.registerProductToCustomer(subAccount, dni)
       .flatMap(p -> Mono.just(ResponseEntity.ok().body(p)))
       .switchIfEmpty(Mono.just(ResponseEntity.badRequest().build()));
   }
@@ -132,6 +137,7 @@ public class ProductController {
    * @param id      -> is identified of the product.
    * @return a product.
    */
+  @CircuitBreaker(name = "putProductCB", fallbackMethod = "fallBackPutProduct")
   @PutMapping("/{id}")
   public Mono<ResponseEntity<ProductDto>> updateProduct(@PathVariable String id, @RequestBody ProductDto product) {
     return productService.updateProduct(product, id)
@@ -145,11 +151,70 @@ public class ProductController {
    * @param id -> is identified of the product.
    * @return a product.
    */
+  @CircuitBreaker(name = "deleteProductCB", fallbackMethod = "fallBackDeleteProduct")
   @DeleteMapping("/{id}")
   public Mono<ResponseEntity<ProductDto>> removeProduct(@PathVariable("id") String id) {
     return productService.removeProduct(id)
       .flatMap(p -> Mono.just(ResponseEntity.ok().body(p)))
       .switchIfEmpty(Mono.just(ResponseEntity.notFound().build()));
+  }
+
+  /**
+   * Method CircuitBreaker to save Product.
+   *
+   * @param ex -> this is exception error.
+   * @return exception error.
+   */
+  public Mono<ResponseEntity<String>> fallBackPostProduct(@RequestBody ProductDto product,
+                                                          RuntimeException ex) {
+    return Mono.just(ResponseEntity.ok().body("Saving Product with "
+      + product.getAccountType()
+      + " not available method"));
+  }
+
+  /**
+   * Method CircuitBreaker to save Product with customer.
+   *
+   * @param ex -> this is exception error.
+   * @return exception error.
+   */
+  public Mono<ResponseEntity<String>> fallBackPostProductRegisterCustomer(@RequestParam(name = "account") String account,
+                                                                          @RequestParam(name = "dni") String dni,
+                                                                          RuntimeException ex) {
+    return Mono.just(ResponseEntity.ok().body("Register Product with dni: "
+      + dni
+      + " account: "
+      + account
+      + " not available microservice"));
+  }
+
+  /**
+   * Method CircuitBreaker to update Product.
+   *
+   * @param ex -> this is exception error.
+   * @return exception error.
+   */
+  public Mono<ResponseEntity<String>> fallBackPutProduct(@PathVariable String id,
+                                                         @RequestBody ProductDto product,
+                                                         RuntimeException ex) {
+    return Mono.just(ResponseEntity.ok().body("updating Product with id: "
+      + id
+      + " account: "
+      + product.getAccountNumber()
+      + " not available"));
+  }
+
+  /**
+   * Method CircuitBreaker to delete Product.
+   *
+   * @param ex -> this is exception error.
+   * @return exception error.
+   */
+  public Mono<ResponseEntity<String>> fallBackDeleteProduct(@PathVariable String id,
+                                                            RuntimeException ex) {
+    return Mono.just(ResponseEntity.ok().body("delete Product with id: "
+      + id
+      + " not available"));
   }
 }
 

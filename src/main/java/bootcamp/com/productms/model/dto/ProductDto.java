@@ -14,6 +14,8 @@ public class ProductDto {
   private String id;
   private String accountType;
   private String accountNumber;
+  private String subAccountNumber;
+  private int level = 1;
   private String currency;
   private double amount = 0;
   private double maintenanceCommission;
@@ -27,6 +29,7 @@ public class ProductDto {
   private String createdBy;
   private LocalDate updateAt;
   private String updateBy;
+  private LocalDate expiredDate;
   private double minimumAverageAmount = 0;
   private double averageDailyBalance = 0;
   private LocalDate averageDailyBalanceDay;

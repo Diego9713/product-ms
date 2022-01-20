@@ -89,6 +89,7 @@ public class ProductService implements IProductService {
    * @return an object with the daily average balance.
    */
   @Override
+  @Transactional
   public Mono<ProductDto> generateSpd(String id) {
     return productRepository.findById(id).flatMap(product -> {
       if (LocalDateTime.now().getHour() > 18 && LocalDate.now().getMonth()
@@ -147,21 +148,21 @@ public class ProductService implements IProductService {
   @Transactional
   public Mono<ProductDto> createProduct(ProductDto product) {
     log.info("save product >>>");
+    //change
     Mono<CustomerDto> customer = webClientCustomerHelper.findCustomer(product.getCustomer());
 
-    Mono<ProductDto> filterProduct = customer.flatMap(customerDto ->
-        Mono.just(filterProductHelper.createObjectProduct(product, customerDto)));
-
-    Mono<List<Product>> productList = customer.flatMap(findCustomer -> productRepository
-        .findByCustomer(findCustomer.getId())
+    Mono<List<Product>> productList = productRepository.findByCustomer(product.getCustomer())
         .filter(findProduct -> findProduct.getStatus().equalsIgnoreCase(CommonConstants.ACTIVE.name()))
-        .collectList());
+        .collectList();
+
+    Mono<ProductDto> filterProduct = customer.flatMap(customerDto -> productList
+        .map(pl -> filterProductHelper.createObjectProduct(product, customerDto, pl)));
 
     Mono<Boolean> isSave = customer
         .flatMap(findCustomer -> productList
-          .flatMap(findProductList -> filterProduct
-            .flatMap(productDto -> Mono.just(filterProductHelper
-              .isSave(findCustomer, productDto, findProductList)))));
+        .flatMap(findProductList -> filterProduct
+          .flatMap(productDto -> Mono.just(filterProductHelper
+            .isSave(findCustomer, productDto, findProductList)))));
 
     Mono<Product> newProductFilter = filterProduct.map(AppUtil::productDtoToEntity);
     return isSave.flatMap(save -> Boolean.TRUE.equals(save)
@@ -174,17 +175,17 @@ public class ProductService implements IProductService {
   /**
    * Method to register an account to multiple clients.
    *
-   * @param accountId -> account identifier.
+   * @param subAccount -> account identifier.
    * @param dni       -> customer document.
    * @return account register with customer.
    */
   @Override
   @Transactional
-  public Mono<ProductDto> registerProductToCustomer(String accountId, String dni) {
+  public Mono<ProductDto> registerProductToCustomer(String subAccount, String dni) {
     log.info("register productByCustomer >>>");
-    Mono<List<Product>> collectList = productRepository.findByAccountNumber(accountId).collectList();
+    Mono<List<Product>> collectList = productRepository.findBySubAccountNumber(subAccount).collectList();
 
-    Mono<Product> productMono = productRepository.findByAccountNumber(accountId).next();
+    Mono<Product> productMono = productRepository.findBySubAccountNumber(subAccount).next();
 
     Mono<CustomerDto> customer = webClientCustomerHelper.findCustomerByDni(dni);
 
@@ -196,14 +197,14 @@ public class ProductService implements IProductService {
         product.setCustomer(customerDto.getId());
         product.setId(null);
       })
-       .flatMap(product -> filterProductHelper.filterProductToCustomer(customerDto)
-         .flatMap(isPermission -> {
-           if (Boolean.TRUE.equals(isPermission)) {
-             return productRepository.save(product);
-           } else {
-             return Mono.empty();
-           }
-         })) : Mono.empty()))
+        .flatMap(product -> filterProductHelper.filterProductToCustomer(customerDto)
+          .flatMap(isPermission -> {
+            if (Boolean.TRUE.equals(isPermission)) {
+              return productRepository.save(product);
+            } else {
+              return Mono.empty();
+            }
+          })) : Mono.empty()))
       .map(AppUtil::entityToProductDto);
 
   }
@@ -217,7 +218,7 @@ public class ProductService implements IProductService {
    */
   @Override
   @Transactional
-  public Mono<ProductDto> updateProduct(ProductDto product, String id) {
+    public Mono<ProductDto> updateProduct(ProductDto product, String id) {
     log.info("update product >>>");
     Mono<CustomerDto> customer = webClientCustomerHelper.findCustomer(product.getCustomer());
     return productRepository.findById(id)

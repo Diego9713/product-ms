@@ -23,8 +23,6 @@ import reactor.core.publisher.Mono;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @AutoConfigureWebTestClient(timeout = "20000")
@@ -42,7 +40,9 @@ class ProductControllerTest {
   private static final ProductSpdDto productSpdDto = new ProductSpdDto();
   private static final String id = "61db64d731dec743727907f3";
   private static final String accountType = "SAVING";
-  private static final String accountNumber = "d85c241a-2eb7-40da-938c-097f30d3756f";
+  private static final String accountNumber = "d558f2fb-dc37-4b32-ba9f-88b31d8efe10";
+  private static final String subAccountNumber = "d558f2fb-dc37-4b32-ba9f-88b31d8efe10";
+  private static final int level = 1;
   private static final String currency = "PEN";
   private static final double amount = 6300;
   private static final double maintenanceCommission = 0;
@@ -55,6 +55,7 @@ class ProductControllerTest {
   private static final LocalDateTime createdAt = LocalDateTime.now();
   private static final String createdBy = "pedro";
   private static final LocalDate updateAt = LocalDate.now();
+  private static final LocalDate expiredDate = LocalDate.parse("2023-01-19");
   private static final String updateBy = "pedro";
   private static final double minimumAverageAmount = 0;
   private static final double averageDailyBalance = 0;
@@ -81,6 +82,9 @@ class ProductControllerTest {
     productDto.setMinimumAverageAmount(minimumAverageAmount);
     productDto.setAverageDailyBalance(averageDailyBalance);
     productDto.setAverageDailyBalanceDay(averageDailyBalanceDay);
+    productDto.setSubAccountNumber(subAccountNumber);
+    productDto.setLevel(level);
+    productDto.setExpiredDate(expiredDate);
     BeanUtils.copyProperties(productDto, product);
     BeanUtils.copyProperties(productDto, productCustomerDto);
     BeanUtils.copyProperties(productDto, productSpdDto);
@@ -138,8 +142,8 @@ class ProductControllerTest {
   @Test
   @DisplayName("GET -> /api/v1/products/averagedailydalance/{customerId}")
   void findAverageDailyBalance() {
-    when(productService.findAverageDailyBalance(customer,"2022-01-15")).thenReturn(Flux.just(productSpdDto));
-    WebTestClient.ResponseSpec responseSpec = webTestClient.get().uri("/api/v1/products/averagedailydalance/" + customer+"?date=2022-01-15")
+    when(productService.findAverageDailyBalance(customer, "2022-01-15")).thenReturn(Flux.just(productSpdDto));
+    WebTestClient.ResponseSpec responseSpec = webTestClient.get().uri("/api/v1/products/averagedailydalance/" + customer + "?date=2022-01-15")
       .accept(MediaType.APPLICATION_JSON)
       .exchange();
 
@@ -157,7 +161,7 @@ class ProductControllerTest {
   @Test
   @DisplayName("POST -> /api/v1/products/registercustomer")
   void registerProductToCustomer() {
-    when(productService.registerProductToCustomer(accountNumber, "1254875")).thenReturn(Mono.just(productDto));
+    when(productService.registerProductToCustomer(subAccountNumber, "1254875")).thenReturn(Mono.just(productDto));
     Assertions.assertNotNull(productController.registerProductToCustomer(accountNumber, "1254875"));
   }
 
@@ -180,5 +184,25 @@ class ProductControllerTest {
   void removeProduct() {
     when(productService.removeProduct(id)).thenReturn(Mono.just(productDto));
     Assertions.assertNotNull(productController.removeProduct(id));
+  }
+
+  @Test
+  void fallBackPostProduct() {
+    Assertions.assertNotNull(productController.fallBackPostProduct(productDto, new RuntimeException("")));
+  }
+
+  @Test
+  void fallBackPostProductRegisterCustomer() {
+    Assertions.assertNotNull(productController.fallBackPostProductRegisterCustomer(accountNumber, "1254875", new RuntimeException("")));
+  }
+
+  @Test
+  void fallBackPutProduct() {
+    Assertions.assertNotNull(productController.fallBackPutProduct(id, productDto, new RuntimeException("")));
+  }
+
+  @Test
+  void fallBackDeleteProduct() {
+    Assertions.assertNotNull(productController.fallBackDeleteProduct(id, new RuntimeException("")));
   }
 }
