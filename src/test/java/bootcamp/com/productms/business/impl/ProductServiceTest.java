@@ -11,6 +11,8 @@ import bootcamp.com.productms.model.dto.ProductCustomerDto;
 import bootcamp.com.productms.model.dto.ProductDto;
 import bootcamp.com.productms.model.dto.ProductSpdDto;
 import bootcamp.com.productms.repository.IProductRepository;
+import bootcamp.com.productms.utils.CommonConstants;
+import bootcamp.com.productms.utils.ConstantsPersonal;
 import com.google.gson.Gson;
 import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
@@ -25,14 +27,13 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import reactor.test.StepVerifier;
 
 import java.io.IOException;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
-
-import static org.junit.jupiter.api.Assertions.*;
 
 @SpringBootTest
 class ProductServiceTest {
@@ -49,6 +50,7 @@ class ProductServiceTest {
 
   public static MockWebServer mockBackEnd;
   private static final Product product = new Product();
+  private static final Product productRemove = new Product();
   private static final ProductDto productDto = new ProductDto();
   private static final List<Product> productDtoList = new ArrayList<>();
   private static final ProductCustomerDto productCustomerDto = new ProductCustomerDto();
@@ -131,6 +133,7 @@ class ProductServiceTest {
     BeanUtils.copyProperties(productDto, product);
     BeanUtils.copyProperties(productDto, productCustomerDto);
     BeanUtils.copyProperties(productDto, productSpdDto);
+    BeanUtils.copyProperties(productDto, productRemove);
     productDtoList.add(product);
     mockBackEnd = new MockWebServer();
     mockBackEnd.start(port);
@@ -155,46 +158,97 @@ class ProductServiceTest {
   @Test
   void findAllProduct() {
     when(productRepository.findAll()).thenReturn(Flux.just(product));
-    Assertions.assertNotNull(productService.findAllProduct());
+    Flux<ProductDto> productDtoFlux = productService.findAllProduct();
+    StepVerifier
+      .create(productDtoFlux)
+      .consumeNextWith(newProduct -> {
+        Assertions.assertEquals(status, newProduct.getStatus());
+      })
+      .verifyComplete();
   }
 
   @Test
   void findByIdProduct() {
     when(productRepository.findById(id)).thenReturn(Mono.just(product));
-    Assertions.assertNotNull(productService.findByIdProduct(id));
-  }
-
-  @Test
-  void findByProductNumber() {
-    when(productRepository.findByAccountNumber(accountNumber)).thenReturn(Flux.just(product));
-    Assertions.assertNotNull(productService.findByProductNumber(accountNumber));
-  }
-
-  @Test
-  void findProductByCustomer() {
-    when(productRepository.findByCustomer(customer)).thenReturn(Flux.just(product));
-    Assertions.assertNotNull(productService.findProductByCustomer(customer));
+    Mono<Product> productMono = productService.findByIdProduct(id);
+    StepVerifier
+      .create(productMono)
+      .consumeNextWith(newProduct -> {
+        Assertions.assertEquals(status, newProduct.getStatus());
+      })
+      .verifyComplete();
   }
 
   @Test
   void findAverageDailyBalance() {
     when(productRepository.findByCustomerAndAverageDailyBalanceDay(customer, averageDailyBalanceDay)).thenReturn(Flux.just(product));
-    Assertions.assertNotNull(productService.findAverageDailyBalance(customer, averageDailyBalanceDay.toString()));
+    Flux<ProductSpdDto> productDtoFlux = productService.findAverageDailyBalance(customer, averageDailyBalanceDay.toString());
+    StepVerifier
+      .create(productDtoFlux)
+      .consumeNextWith(newProduct -> {
+        Assertions.assertEquals(status, newProduct.getStatus());
+      })
+      .verifyComplete();
+  }
+
+  @Test
+  void findByAccountTypeAndCreatedAtBetween() {
+    when(productRepository.findByAccountTypeAndCreatedAtBetween(accountType, LocalDate.parse("2022-01-12"), LocalDate.parse("2022-01-19")))
+      .thenReturn(Flux.just(product));
+    Flux<ProductDto> productDtoFlux = productService.findByAccountTypeAndCreatedAtBetween(accountType,"2022-01-12","2022-01-19");
+    StepVerifier
+      .create(productDtoFlux)
+      .consumeNextWith(newProduct -> {
+        Assertions.assertEquals(status, newProduct.getStatus());
+      })
+      .verifyComplete();
+  }
+
+  @Test
+  void findByProductNumber() {
+    when(productRepository.findByAccountNumber(accountNumber)).thenReturn(Flux.just(product));
+    Flux<ProductDto> productMono = productService.findByProductNumber(accountNumber);
+    StepVerifier
+      .create(productMono)
+      .consumeNextWith(newProduct -> {
+        Assertions.assertEquals(status, newProduct.getStatus());
+      })
+      .verifyComplete();
+  }
+
+  @Test
+  void findProductByCustomer() {
+    when(productRepository.findByCustomer(customer)).thenReturn(Flux.just(product));
+    Flux<ProductCustomerDto> productMono = productService.findProductByCustomer(customer);
+    StepVerifier
+      .create(productMono)
+      .consumeNextWith(newProduct -> {
+        Assertions.assertEquals(status, newProduct.getStatus());
+      })
+      .verifyComplete();
   }
 
   @Test
   void generateSpd() {
     when(productRepository.findById(id)).thenReturn(Mono.just(product));
-    Assertions.assertNotNull(productService.generateSpd(id));
+    when(filterProductHelper.filterGenerateSpd(product)).thenReturn(Mono.just(product));
+    when(productRepository.save(product)).thenReturn(Mono.just(product));
+    Mono<ProductDto> productMono = productService.generateSpd(id);
+    StepVerifier
+      .create(productMono)
+      .consumeNextWith(newProduct -> {
+        Assertions.assertEquals(status, newProduct.getStatus());
+      })
+      .verifyComplete();
   }
 
   @Test
   void createProduct() {
     when(webClientCustomerHelper.findCustomer(customer)).thenReturn(Mono.just(customerDto));
     when(productRepository.findByCustomer(customer)).thenReturn(Flux.just(product));
-    when(productRepository.save(product)).thenReturn(Mono.just(product));
     when(filterProductHelper.createObjectProduct(productDto,customerDto,productDtoList)).thenReturn(productDto);
     when(filterProductHelper.isSave(customerDto,productDto,productDtoList)).thenReturn(Boolean.TRUE);
+    when(productRepository.save(product)).thenReturn(Mono.just(product));
     Assertions.assertNotNull(productService.createProduct(productDto));
   }
 
@@ -202,9 +256,10 @@ class ProductServiceTest {
   void registerProductToCustomer() {
     when(productRepository.findBySubAccountNumber(subAccountNumber)).thenReturn(Flux.just(product));
     when(webClientCustomerHelper.findCustomerByDni(documentNumber)).thenReturn(Mono.just(customerDto));
-    when(productRepository.save(product)).thenReturn(Mono.just(product));
+    when(filterProductHelper.searchProductRegister(Mono.just(customerDto),Mono.just(productDtoList))).thenReturn(Mono.just(Boolean.FALSE));
+    when(filterProductHelper.setProductAttributes(customerDto,product)).thenReturn(Mono.just(product));
     when(filterProductHelper.filterProductToCustomer(customerDto)).thenReturn(Mono.just(Boolean.TRUE));
-    when(filterProductHelper.searchProductRegister(Mono.just(customerDto),Mono.just(productDtoList))).thenReturn(Mono.just(Boolean.TRUE));
+    when(productRepository.save(product)).thenReturn(Mono.just(product));
     Assertions.assertNotNull(productService.registerProductToCustomer(accountNumber,documentNumber));
   }
 
@@ -219,9 +274,15 @@ class ProductServiceTest {
 
   @Test
   void removeProduct() {
-    when(productRepository.findById(id)).thenReturn(Mono.just(product));
+    when(productRepository.findById(id)).thenReturn(Mono.just(productRemove));
     when(webClientCardHelper.deleteCard(id)).thenReturn(Mono.just(Boolean.TRUE));
-    when(productRepository.save(product)).thenReturn(Mono.just(product));
-    Assertions.assertNotNull(productService.removeProduct(id));
+    when(productRepository.save(productRemove)).thenReturn(Mono.just(productRemove));
+    Mono<ProductDto> productDtoMono = productService.removeProduct(id);
+    StepVerifier
+      .create(productDtoMono)
+      .consumeNextWith(newCustomer -> {
+        Assertions.assertEquals(CommonConstants.INACTIVE.name(), newCustomer.getStatus());
+      })
+      .verifyComplete();
   }
 }

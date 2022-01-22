@@ -263,12 +263,12 @@ public class FilterProductHelper {
         if (product.getAccountType().equalsIgnoreCase(CommonConstants.FIXED_TERM.name())
             && Arrays.stream(ConstantsPersonal.values())
             .anyMatch(p -> p.toString().equalsIgnoreCase(otherProduct.getAccountType()))) {
-          isPermission = filterPermissionPersonal(productList, otherProduct);
+          isPermission = filterPermissionPersonalVip(productList, otherProduct);
         } else {
           if (product.getAccountType().equalsIgnoreCase(CommonConstants.SAVING.name())
               || product.getAccountType().equalsIgnoreCase(CommonConstants.CURRENT.name())
               || product.getAccountType().equalsIgnoreCase(CommonConstants.CREDIT.name())) {
-            isPermission = filterPermissionBusiness(productList, otherProduct);
+            isPermission = filterPermissionPersonal(productList, otherProduct);
           }
         }
       }
@@ -308,7 +308,7 @@ public class FilterProductHelper {
    * @param otherProduct -> is the product entered by the user.
    * @return a condition for the storage of the product.
    */
-  public boolean filterPermissionPersonal(List<Product> productList, ProductDto otherProduct) {
+  public boolean filterPermissionPersonalVip(List<Product> productList, ProductDto otherProduct) {
     boolean isPermission;
     //change
     if (productList.stream()
@@ -330,7 +330,7 @@ public class FilterProductHelper {
    * @param otherProduct -> is the product entered by the user.
    * @return a condition for the storage of the product.
    */
-  public boolean filterPermissionBusiness(List<Product> productList, ProductDto otherProduct) {
+  public boolean filterPermissionPersonal(List<Product> productList, ProductDto otherProduct) {
     boolean isPermission = false;
     if (productList.size() == 1
         && !otherProduct.getAccountType().equalsIgnoreCase(CommonConstants.CREDIT.name())
@@ -345,21 +345,37 @@ public class FilterProductHelper {
       }
 
     } else {
-      Optional<Product> productDtoMono = productList.stream().findFirst();
-      if (productList.size() == 1 && otherProduct.getAccountType().equalsIgnoreCase(CommonConstants.CREDIT.name())
-          && productDtoMono.stream().noneMatch(product -> product.getAccountType()
-          .equalsIgnoreCase(CommonConstants.CREDIT.name()))) {
-        isPermission = true;
-      }
-      //change
+      isPermission = filterPermissionPersonalCredit(productList, otherProduct);
+    }
+
+    return isPermission;
+  }
+
+  /**
+   * Method to know the type of account credit.
+   *
+   * @param productList  -> is the list of accounts assigned to is customer.
+   * @param otherProduct -> is the product entered by the user.
+   * @return a condition for the storage of the product.
+   */
+  public boolean filterPermissionPersonalCredit(List<Product> productList, ProductDto otherProduct) {
+    boolean isPermission = false;
+
+    Optional<Product> productDtoMono = productList.stream().findFirst();
+    if (productList.size() == 1 && otherProduct.getAccountType().equalsIgnoreCase(CommonConstants.CREDIT.name())
+        && productDtoMono.stream().noneMatch(product -> product.getAccountType()
+        .equalsIgnoreCase(CommonConstants.CREDIT.name()))) {
+      isPermission = true;
+    } else {
       if (productList.size() == 1
+          && productList.stream().anyMatch(product -> product.getAccountType()
+          .equalsIgnoreCase(CommonConstants.CREDIT.name()))
           && productList.stream().anyMatch(product -> product.getExpiredDate().isAfter(LocalDate.now()))
           && otherProduct.getAccountType().equalsIgnoreCase(CommonConstants.SAVING.name())
           || otherProduct.getAccountType().equalsIgnoreCase(CommonConstants.CURRENT.name())) {
         isPermission = true;
       }
     }
-
     return isPermission;
   }
 
@@ -388,4 +404,39 @@ public class FilterProductHelper {
       .anyMatch(product -> product.getCustomer().equals(findCustomer.getId()))));
 
   }
+
+  /**
+   * Method to filter to generate SPD.
+   *
+   * @param product -> is the wanted customer.
+   * @return a condition for the storage of the product.
+   */
+  public Mono<Product> filterGenerateSpd(Product product) {
+
+    if (LocalDateTime.now().getHour() > 15 && LocalDate.now().getMonth()
+        .equals(product.getAverageDailyBalanceDay().getMonth())) {
+      product.setAverageDailyBalance(product.getAmount() + product.getAverageDailyBalance());
+      product.setMinimumAverageAmount(product.getAverageDailyBalance() / LocalDate.now().getDayOfMonth());
+    } else {
+      if (!LocalDate.now().getMonth().equals(product.getAverageDailyBalanceDay().getMonth())) {
+        product.setAverageDailyBalanceDay(LocalDate.now());
+        product.setAverageDailyBalance(product.getAmount());
+      }
+    }
+    return Mono.just(product);
+  }
+
+  /**
+   * Method to add attributes to product.
+   *
+   * @param customerDto -> is the wanted customer.
+   * @param product     -> find product.
+   * @return a condition for the storage of the product.
+   */
+  public Mono<Product> setProductAttributes(CustomerDto customerDto, Product product) {
+    product.setCustomer(customerDto.getId());
+    product.setId(null);
+    return Mono.just(product);
+  }
+
 }
