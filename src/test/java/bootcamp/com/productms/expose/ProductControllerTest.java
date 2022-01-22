@@ -48,11 +48,11 @@ class ProductControllerTest {
   private static final double maintenanceCommission = 0;
   private static final LocalDateTime maintenanceCommissionDay = null;
   private static final int maxTransactNumber = 10;
-  private static final LocalDateTime transactNumberDay = null;
+  private static final LocalDate transactNumberDay = null;
   private static final double creditLimit = 0;
   private static final String customer = "61db5ffd7610bd27a53b2b8b";
   private static final String status = "ACTIVE";
-  private static final LocalDateTime createdAt = LocalDateTime.now();
+  private static final LocalDate createdAt = LocalDate.now();
   private static final String createdBy = "pedro";
   private static final LocalDate updateAt = LocalDate.now();
   private static final LocalDate expiredDate = LocalDate.parse("2023-01-19");
@@ -95,7 +95,8 @@ class ProductControllerTest {
   void findAllProduct() {
     when(productService.findAllProduct()).thenReturn(Flux.just(productDto));
 
-    WebTestClient.ResponseSpec responseSpec = webTestClient.get().uri("/api/v1/products")
+    WebTestClient.ResponseSpec responseSpec = webTestClient.get()
+      .uri("/api/v1/products")
       .accept(MediaType.APPLICATION_JSON)
       .exchange();
 
@@ -107,7 +108,8 @@ class ProductControllerTest {
   @DisplayName("GET -> /api/v1/products/accountnumber/{account}")
   void findOneProductNumber() {
     when(productService.findByProductNumber(accountNumber)).thenReturn(Flux.just(productDto));
-    WebTestClient.ResponseSpec responseSpec = webTestClient.get().uri("/api/v1/products/accountnumber/" + accountNumber)
+    WebTestClient.ResponseSpec responseSpec = webTestClient.get()
+      .uri("/api/v1/products/accountnumber/" + accountNumber)
       .accept(MediaType.APPLICATION_JSON)
       .exchange();
 
@@ -119,19 +121,8 @@ class ProductControllerTest {
   @DisplayName("GET -> /api/v1/products/customer/{customer}")
   void findProductByCustomer() {
     when(productService.findProductByCustomer(customer)).thenReturn(Flux.just(productCustomerDto));
-    WebTestClient.ResponseSpec responseSpec = webTestClient.get().uri("/api/v1/products/customer/" + customer)
-      .accept(MediaType.APPLICATION_JSON)
-      .exchange();
-
-    responseSpec.expectStatus().isOk()
-      .expectHeader().contentType(MediaType.APPLICATION_JSON);
-  }
-
-  @Test
-  @DisplayName("GET -> /api/v1/products/{id}")
-  void findOneProduct() {
-    when(productService.findByIdProduct(id)).thenReturn(Mono.just(product));
-    WebTestClient.ResponseSpec responseSpec = webTestClient.get().uri("/api/v1/products/" + id)
+    WebTestClient.ResponseSpec responseSpec = webTestClient.get()
+      .uri("/api/v1/products/customer/" + customer)
       .accept(MediaType.APPLICATION_JSON)
       .exchange();
 
@@ -143,12 +134,42 @@ class ProductControllerTest {
   @DisplayName("GET -> /api/v1/products/averagedailydalance/{customerId}")
   void findAverageDailyBalance() {
     when(productService.findAverageDailyBalance(customer, "2022-01-15")).thenReturn(Flux.just(productSpdDto));
-    WebTestClient.ResponseSpec responseSpec = webTestClient.get().uri("/api/v1/products/averagedailydalance/" + customer + "?date=2022-01-15")
+    WebTestClient.ResponseSpec responseSpec = webTestClient.get()
+      .uri("/api/v1/products/averagedailydalance/" + customer + "?date=2022-01-15")
       .accept(MediaType.APPLICATION_JSON)
       .exchange();
 
     responseSpec.expectStatus().isOk()
       .expectHeader().contentType(MediaType.APPLICATION_JSON);
+  }
+
+  @Test
+  @DisplayName("GET -> /api/v1/products/accounttype/{accounttype}")
+  void findByAccountTypeAndCreatedAtBetween() {
+    when(productService.findByAccountTypeAndCreatedAtBetween(accountType, "2022-01-12", "2022-01-19"))
+      .thenReturn(Flux.just(productDto));
+    WebTestClient.ResponseSpec responseSpec = webTestClient.get()
+      .uri("/api/v1/products/accounttype/" + accountType + "?from=2022-01-12&until=2022-01-19")
+      .accept(MediaType.APPLICATION_JSON)
+      .exchange();
+
+    responseSpec.expectStatus().isOk()
+      .expectHeader().contentType(MediaType.APPLICATION_JSON);
+  }
+
+  @Test
+  @DisplayName("GET -> /api/v1/products/{id}")
+  void findOneProduct() {
+    when(productService.findByIdProduct(id)).thenReturn(Mono.just(product));
+    WebTestClient.ResponseSpec responseSpec = webTestClient.get()
+      .uri("/api/v1/products/" + id)
+      .accept(MediaType.APPLICATION_JSON)
+      .exchange();
+
+    responseSpec.expectStatus().isOk()
+      .expectHeader().contentType(MediaType.APPLICATION_JSON);
+    responseSpec.expectBody()
+      .jsonPath("$.accountType").isEqualTo(productDto.getAccountType());
   }
 
   @Test

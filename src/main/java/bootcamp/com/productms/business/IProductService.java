@@ -15,6 +15,8 @@ public interface IProductService {
 
   Flux<ProductSpdDto> findAverageDailyBalance(String id, String dateTime);
 
+  Flux<ProductDto> findByAccountTypeAndCreatedAtBetween(String accountType, String from, String until);
+
   Mono<ProductDto> generateSpd(String id);
 
   Flux<ProductDto> findByProductNumber(String id);
