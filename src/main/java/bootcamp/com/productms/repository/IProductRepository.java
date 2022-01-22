@@ -12,6 +12,8 @@ public interface IProductRepository extends ReactiveMongoRepository<Product, Str
 
   Flux<Product> findByCustomerAndAverageDailyBalanceDay(String customer, LocalDate dateTime);
 
+  Flux<Product> findByAccountTypeAndCreatedAtBetween(String accountType, LocalDate from, LocalDate until);
+
   Flux<Product> findByAccountNumber(String accountNumber);
 
   Flux<Product> findBySubAccountNumber(String subAccountNumber);

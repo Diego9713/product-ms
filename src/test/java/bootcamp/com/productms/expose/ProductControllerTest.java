@@ -48,11 +48,11 @@ class ProductControllerTest {
   private static final double maintenanceCommission = 0;
   private static final LocalDateTime maintenanceCommissionDay = null;
   private static final int maxTransactNumber = 10;
-  private static final LocalDateTime transactNumberDay = null;
+  private static final LocalDate transactNumberDay = null;
   private static final double creditLimit = 0;
   private static final String customer = "61db5ffd7610bd27a53b2b8b";
   private static final String status = "ACTIVE";
-  private static final LocalDateTime createdAt = LocalDateTime.now();
+  private static final LocalDate createdAt = LocalDate.now();
   private static final String createdBy = "pedro";
   private static final LocalDate updateAt = LocalDate.now();
   private static final LocalDate expiredDate = LocalDate.parse("2023-01-19");

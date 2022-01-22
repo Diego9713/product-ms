@@ -27,7 +27,7 @@ public class FilterProductHelper {
    * @return the product complete.
    */
   public ProductDto createObjectProduct(ProductDto product, CustomerDto customerDto, List<Product> productDtoList) {
-    product.setCreatedAt(LocalDateTime.now());
+    product.setCreatedAt(LocalDate.now());
     product.setUpdateAt(LocalDate.now());
     product.setStatus(CommonConstants.ACTIVE.name());
     product.setAccountType(product.getAccountType().toUpperCase());
@@ -132,7 +132,7 @@ public class FilterProductHelper {
         product.setAverageDailyBalanceDay(LocalDate.now());
         product.setMaintenanceCommissionDay(null);
         product.setExpiredDate(null);
-        LocalDateTime transactDay = LocalDateTime.now();
+        LocalDate transactDay = LocalDate.now();
         product.setTransactNumberDay(transactDay.plusDays(10));
         break;
       default:
@@ -140,11 +140,13 @@ public class FilterProductHelper {
         product.setMaxTransactNumber(-1);
         product.setMinimumAverageAmount(0);
         product.setAverageDailyBalance(product.getAmount());
-        product.setTransactNumberDay(LocalDateTime.now());
+        product.setTransactNumberDay(LocalDate.now());
         product.setAverageDailyBalanceDay(LocalDate.now());
         product.setMaintenanceCommissionDay(null);
-        if (product.getCreditLimit() <= 0 || product.getExpiredDate() == null) {
+        if (product.getCreditLimit() <= 0) {
           product.setCreditLimit(1000);
+        }
+        if (product.getExpiredDate() == null) {
           product.setExpiredDate(LocalDate.now().plusYears(1));
         }
         break;

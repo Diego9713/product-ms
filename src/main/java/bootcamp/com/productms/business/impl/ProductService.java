@@ -12,9 +12,11 @@ import bootcamp.com.productms.model.dto.ProductSpdDto;
 import bootcamp.com.productms.repository.IProductRepository;
 import bootcamp.com.productms.utils.AppUtil;
 import bootcamp.com.productms.utils.CommonConstants;
+
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
+
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -83,6 +85,25 @@ public class ProductService implements IProductService {
   }
 
   /**
+   * Method search product to account type and date.
+   *
+   * @param accountType -> value of type account product.
+   * @param from        -> start date.
+   * @param until       -> ending date.
+   * @return a list products.
+   */
+  @Override
+  @Transactional(readOnly = true)
+  public Flux<ProductDto> findByAccountTypeAndCreatedAtBetween(String accountType, String from, String until) {
+    LocalDate fromDate = LocalDate.parse(from);
+    LocalDate untilDate = LocalDate.parse(until);
+    String accountUpperCase = accountType.toUpperCase();
+    return productRepository.findByAccountTypeAndCreatedAtBetween(accountUpperCase, fromDate, untilDate)
+      .map(AppUtil::entityToProductDto);
+  }
+
+
+  /**
    * Method to generate the average daily balance per month per product.
    *
    * @param id -> product identifier.
@@ -93,7 +114,7 @@ public class ProductService implements IProductService {
   public Mono<ProductDto> generateSpd(String id) {
     return productRepository.findById(id).flatMap(product -> {
       if (LocalDateTime.now().getHour() > 18 && LocalDate.now().getMonth()
-          .equals(product.getAverageDailyBalanceDay().getMonth())) {
+        .equals(product.getAverageDailyBalanceDay().getMonth())) {
         product.setAverageDailyBalance(product.getAmount() + product.getAverageDailyBalance());
         product.setMinimumAverageAmount(product.getAverageDailyBalance() / LocalDate.now().getDayOfMonth());
       } else {
@@ -152,14 +173,14 @@ public class ProductService implements IProductService {
     Mono<CustomerDto> customer = webClientCustomerHelper.findCustomer(product.getCustomer());
 
     Mono<List<Product>> productList = productRepository.findByCustomer(product.getCustomer())
-        .filter(findProduct -> findProduct.getStatus().equalsIgnoreCase(CommonConstants.ACTIVE.name()))
-        .collectList();
+      .filter(findProduct -> findProduct.getStatus().equalsIgnoreCase(CommonConstants.ACTIVE.name()))
+      .collectList();
 
     Mono<ProductDto> filterProduct = customer.flatMap(customerDto -> productList
-        .map(pl -> filterProductHelper.createObjectProduct(product, customerDto, pl)));
+      .map(pl -> filterProductHelper.createObjectProduct(product, customerDto, pl)));
 
     Mono<Boolean> isSave = customer
-        .flatMap(findCustomer -> productList
+      .flatMap(findCustomer -> productList
         .flatMap(findProductList -> filterProduct
           .flatMap(productDto -> Mono.just(filterProductHelper
             .isSave(findCustomer, productDto, findProductList)))));
@@ -176,7 +197,7 @@ public class ProductService implements IProductService {
    * Method to register an account to multiple clients.
    *
    * @param subAccount -> account identifier.
-   * @param dni       -> customer document.
+   * @param dni        -> customer document.
    * @return account register with customer.
    */
   @Override
@@ -194,9 +215,9 @@ public class ProductService implements IProductService {
     return webClientCustomerHelper.findCustomerByDni(dni)
       .switchIfEmpty(Mono.empty())
       .flatMap(customerDto -> isFind.flatMap(find -> Boolean.FALSE.equals(find) ? productMono.doOnNext(product -> {
-        product.setCustomer(customerDto.getId());
-        product.setId(null);
-      })
+          product.setCustomer(customerDto.getId());
+          product.setId(null);
+        })
         .flatMap(product -> filterProductHelper.filterProductToCustomer(customerDto)
           .flatMap(isPermission -> {
             if (Boolean.TRUE.equals(isPermission)) {
@@ -218,7 +239,7 @@ public class ProductService implements IProductService {
    */
   @Override
   @Transactional
-    public Mono<ProductDto> updateProduct(ProductDto product, String id) {
+  public Mono<ProductDto> updateProduct(ProductDto product, String id) {
     log.info("update product >>>");
     Mono<CustomerDto> customer = webClientCustomerHelper.findCustomer(product.getCustomer());
     return productRepository.findById(id)

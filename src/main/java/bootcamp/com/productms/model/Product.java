@@ -41,7 +41,7 @@ public class Product {
   @Field(name = "max_transact_number")
   private int maxTransactNumber = 10;
   @Field(name = "transact_number_day")
-  private LocalDateTime transactNumberDay;
+  private LocalDate transactNumberDay;
   @Field(name = "credit_limit")
   private double creditLimit;
   @Field(name = "expired_date")
@@ -49,7 +49,7 @@ public class Product {
   @Field(name = "customer")
   private String customer;
   @Field(name = "created_at")
-  private LocalDateTime createdAt;
+  private LocalDate createdAt;
   @Field(name = "created_by")
   private String createdBy;
   @Field(name = "update_at")

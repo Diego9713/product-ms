@@ -74,6 +74,21 @@ public class ProductController {
   }
 
   /**
+   * Method search product to account type and date.
+   *
+   * @param accountType -> value of type account product.
+   * @param from        -> start date.
+   * @param until       -> ending date.
+   * @return a list products.
+   */
+  @GetMapping("/accounttype/{accounttype}")
+  public Flux<ProductDto> findByAccountTypeAndCreatedAtBetween(@PathVariable("accounttype") String accountType,
+                                                               @RequestParam("from") String from,
+                                                               @RequestParam("until") String until) {
+    return productService.findByAccountTypeAndCreatedAtBetween(accountType,from, until);
+  }
+
+  /**
    * Method to list a specific product.
    *
    * @param id -> is identified of the product.
@@ -105,7 +120,7 @@ public class ProductController {
    * Method to register an account to multiple clients.
    *
    * @param subAccount -> account identifier.
-   * @param dni     -> customer document.
+   * @param dni        -> customer document.
    * @return account register with customer.
    */
   @CircuitBreaker(name = "postProductRegisterCustomerCB", fallbackMethod = "fallBackPostProductRegisterCustomer")
