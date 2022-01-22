@@ -11,6 +11,11 @@ import org.springframework.web.reactive.function.client.WebClient;
 @Configuration
 @EnableWebFlux
 public class WebClientConfig implements WebFluxConfigurer {
+  /**
+   * Method to connect with other microservice.
+   *
+   * @return connection microservice.
+   */
   @Bean
   public WebClient getWebClient() {
     return WebClient.builder()

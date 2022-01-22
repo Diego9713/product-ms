@@ -74,6 +74,21 @@ public class ProductController {
   }
 
   /**
+   * Method search product to account type and date.
+   *
+   * @param accountType -> value of type account product.
+   * @param from        -> start date.
+   * @param until       -> ending date.
+   * @return a list products.
+   */
+  @GetMapping("/accounttype/{accounttype}")
+  public Flux<ProductDto> findByAccountTypeAndCreatedAtBetween(@PathVariable("accounttype") String accountType,
+                                                               @RequestParam("from") String from,
+                                                               @RequestParam("until") String until) {
+    return productService.findByAccountTypeAndCreatedAtBetween(accountType, from, until);
+  }
+
+  /**
    * Method to list a specific product.
    *
    * @param id -> is identified of the product.
@@ -105,7 +120,7 @@ public class ProductController {
    * Method to register an account to multiple clients.
    *
    * @param subAccount -> account identifier.
-   * @param dni     -> customer document.
+   * @param dni        -> customer document.
    * @return account register with customer.
    */
   @CircuitBreaker(name = "postProductRegisterCustomerCB", fallbackMethod = "fallBackPostProductRegisterCustomer")
@@ -166,10 +181,8 @@ public class ProductController {
    * @param ex -> this is exception error.
    * @return exception error.
    */
-  public Mono<ResponseEntity<String>> fallBackPostProduct(@RequestBody ProductDto product,
-                                                          RuntimeException ex) {
-    return Mono.just(ResponseEntity.ok().body("Saving Product with "
-      + product.getAccountType()
+  public Mono<ResponseEntity<String>> fallBackPostProduct(@RequestBody ProductDto product, RuntimeException ex) {
+    return Mono.just(ResponseEntity.ok().body("Saving Product with " + product.getAccountType()
       + " not available method"));
   }
 
@@ -183,10 +196,7 @@ public class ProductController {
                                                                           @RequestParam(name = "dni") String dni,
                                                                           RuntimeException ex) {
     return Mono.just(ResponseEntity.ok().body("Register Product with dni: "
-      + dni
-      + " account: "
-      + account
-      + " not available microservice"));
+      + dni + " account: " + account + " not available microservice"));
   }
 
   /**
@@ -195,14 +205,10 @@ public class ProductController {
    * @param ex -> this is exception error.
    * @return exception error.
    */
-  public Mono<ResponseEntity<String>> fallBackPutProduct(@PathVariable String id,
-                                                         @RequestBody ProductDto product,
+  public Mono<ResponseEntity<String>> fallBackPutProduct(@PathVariable String id, @RequestBody ProductDto product,
                                                          RuntimeException ex) {
     return Mono.just(ResponseEntity.ok().body("updating Product with id: "
-      + id
-      + " account: "
-      + product.getAccountNumber()
-      + " not available"));
+      + id + " account: " + product.getAccountNumber() + " not available"));
   }
 
   /**
@@ -211,11 +217,9 @@ public class ProductController {
    * @param ex -> this is exception error.
    * @return exception error.
    */
-  public Mono<ResponseEntity<String>> fallBackDeleteProduct(@PathVariable String id,
-                                                            RuntimeException ex) {
+  public Mono<ResponseEntity<String>> fallBackDeleteProduct(@PathVariable String id, RuntimeException ex) {
     return Mono.just(ResponseEntity.ok().body("delete Product with id: "
-      + id
-      + " not available"));
+      + id + " not available"));
   }
 }
 

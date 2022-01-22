@@ -83,27 +83,21 @@ public class ProductService implements IProductService {
   }
 
   /**
-   * Method to generate the average daily balance per month per product.
+   * Method search product to account type and date.
    *
-   * @param id -> product identifier.
-   * @return an object with the daily average balance.
+   * @param accountType -> value of type account product.
+   * @param from        -> start date.
+   * @param until       -> ending date.
+   * @return a list products.
    */
   @Override
-  @Transactional
-  public Mono<ProductDto> generateSpd(String id) {
-    return productRepository.findById(id).flatMap(product -> {
-      if (LocalDateTime.now().getHour() > 18 && LocalDate.now().getMonth()
-          .equals(product.getAverageDailyBalanceDay().getMonth())) {
-        product.setAverageDailyBalance(product.getAmount() + product.getAverageDailyBalance());
-        product.setMinimumAverageAmount(product.getAverageDailyBalance() / LocalDate.now().getDayOfMonth());
-      } else {
-        if (!LocalDate.now().getMonth().equals(product.getAverageDailyBalanceDay().getMonth())) {
-          product.setAverageDailyBalanceDay(LocalDate.now());
-          product.setAverageDailyBalance(product.getAmount());
-        }
-      }
-      return productRepository.save(product).map(AppUtil::entityToProductDto);
-    });
+  @Transactional(readOnly = true)
+  public Flux<ProductDto> findByAccountTypeAndCreatedAtBetween(String accountType, String from, String until) {
+    LocalDate fromDate = LocalDate.parse(from);
+    LocalDate untilDate = LocalDate.parse(until);
+    String accountUpperCase = accountType.toUpperCase();
+    return productRepository.findByAccountTypeAndCreatedAtBetween(accountUpperCase, fromDate, untilDate)
+      .map(AppUtil::entityToProductDto);
   }
 
   /**
@@ -139,6 +133,21 @@ public class ProductService implements IProductService {
   }
 
   /**
+   * Method to generate the average daily balance per month per product.
+   *
+   * @param id -> product identifier.
+   * @return an object with the daily average balance.
+   */
+  @Override
+  @Transactional
+  public Mono<ProductDto> generateSpd(String id) {
+    return productRepository.findById(id)
+      .flatMap(product -> filterProductHelper.filterGenerateSpd(product))
+      .flatMap(productRepository::save)
+      .map(AppUtil::entityToProductDto);
+  }
+
+  /**
    * Method of saving a product.
    *
    * @param product -> object with account data.
@@ -148,12 +157,13 @@ public class ProductService implements IProductService {
   @Transactional
   public Mono<ProductDto> createProduct(ProductDto product) {
     log.info("save product >>>");
-    //change
+
     Mono<CustomerDto> customer = webClientCustomerHelper.findCustomer(product.getCustomer());
 
-    Mono<List<Product>> productList = productRepository.findByCustomer(product.getCustomer())
-        .filter(findProduct -> findProduct.getStatus().equalsIgnoreCase(CommonConstants.ACTIVE.name()))
-        .collectList();
+    Flux<Product> productFlux = productRepository.findByCustomer(product.getCustomer())
+        .filter(findProduct -> findProduct.getStatus().equalsIgnoreCase(CommonConstants.ACTIVE.name()));
+
+    Mono<List<Product>> productList = productFlux.collectList();
 
     Mono<ProductDto> filterProduct = customer.flatMap(customerDto -> productList
         .map(pl -> filterProductHelper.createObjectProduct(product, customerDto, pl)));
@@ -165,46 +175,37 @@ public class ProductService implements IProductService {
             .isSave(findCustomer, productDto, findProductList)))));
 
     Mono<Product> newProductFilter = filterProduct.map(AppUtil::productDtoToEntity);
-    return isSave.flatMap(save -> Boolean.TRUE.equals(save)
-        ? newProductFilter.flatMap(productRepository::save)
-        : Mono.empty())
-      .map(AppUtil::entityToProductDto);
-
+    return isSave.filter(Boolean.TRUE::equals)
+      .flatMap(b -> newProductFilter.flatMap(productRepository::save))
+        .map(AppUtil::entityToProductDto);
   }
 
   /**
    * Method to register an account to multiple clients.
    *
    * @param subAccount -> account identifier.
-   * @param dni       -> customer document.
+   * @param dni        -> customer document.
    * @return account register with customer.
    */
   @Override
   @Transactional
   public Mono<ProductDto> registerProductToCustomer(String subAccount, String dni) {
     log.info("register productByCustomer >>>");
-    Mono<List<Product>> collectList = productRepository.findBySubAccountNumber(subAccount).collectList();
 
-    Mono<Product> productMono = productRepository.findBySubAccountNumber(subAccount).next();
+    Flux<Product> productFlux = productRepository.findBySubAccountNumber(subAccount);
+    Mono<List<Product>> collectList = productFlux.collectList();
+    Mono<Product> productMono = productFlux.next();
 
     Mono<CustomerDto> customer = webClientCustomerHelper.findCustomerByDni(dni);
-
     Mono<Boolean> isFind = filterProductHelper.searchProductRegister(customer, collectList);
 
     return webClientCustomerHelper.findCustomerByDni(dni)
       .switchIfEmpty(Mono.empty())
-      .flatMap(customerDto -> isFind.flatMap(find -> Boolean.FALSE.equals(find) ? productMono.doOnNext(product -> {
-        product.setCustomer(customerDto.getId());
-        product.setId(null);
-      })
+      .flatMap(customerDto -> isFind.filter(Boolean.FALSE::equals)
+          .flatMap(b -> productMono.flatMap(product -> filterProductHelper.setProductAttributes(customerDto, product)))
         .flatMap(product -> filterProductHelper.filterProductToCustomer(customerDto)
-          .flatMap(isPermission -> {
-            if (Boolean.TRUE.equals(isPermission)) {
-              return productRepository.save(product);
-            } else {
-              return Mono.empty();
-            }
-          })) : Mono.empty()))
+          .filter(Boolean.TRUE::equals)
+          .flatMap(isPermission -> productRepository.save(product))))
       .map(AppUtil::entityToProductDto);
 
   }
@@ -218,7 +219,7 @@ public class ProductService implements IProductService {
    */
   @Override
   @Transactional
-    public Mono<ProductDto> updateProduct(ProductDto product, String id) {
+  public Mono<ProductDto> updateProduct(ProductDto product, String id) {
     log.info("update product >>>");
     Mono<CustomerDto> customer = webClientCustomerHelper.findCustomer(product.getCustomer());
     return productRepository.findById(id)
@@ -243,7 +244,8 @@ public class ProductService implements IProductService {
       .switchIfEmpty(Mono.empty())
       .doOnNext(p -> p.setStatus(CommonConstants.INACTIVE.name()))
       .flatMap(product -> webClientCardHelper.deleteCard(product.getId())
-        .flatMap(isBool -> Boolean.TRUE.equals(isBool) ? productRepository.save(product) : Mono.empty())
+        .filter(Boolean.TRUE::equals)
+        .flatMap(isBool -> productRepository.save(product))
         .map(AppUtil::entityToProductDto));
 
   }

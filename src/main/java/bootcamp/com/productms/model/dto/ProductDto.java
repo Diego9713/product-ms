@@ -21,11 +21,11 @@ public class ProductDto {
   private double maintenanceCommission;
   private LocalDateTime maintenanceCommissionDay;
   private int maxTransactNumber = 10;
-  private LocalDateTime transactNumberDay;
+  private LocalDate transactNumberDay;
   private double creditLimit;
   private String customer;
   private String status;
-  private LocalDateTime createdAt;
+  private LocalDate createdAt;
   private String createdBy;
   private LocalDate updateAt;
   private String updateBy;
