@@ -225,9 +225,9 @@ public class ProductService implements IProductService {
     return productRepository.findById(id)
       .switchIfEmpty(Mono.empty())
       .flatMap(findByProduct -> customer.flatMap(customerDto ->
-          filterProductHelper.updateObjectProduct(product, findByProduct, customerDto))
-        .map(AppUtil::productDtoToEntity))
-      .flatMap(productRepository::save).map(AppUtil::entityToProductDto);
+          filterProductHelper.updateObjectProduct(product, findByProduct, customerDto)
+            .map(AppUtil::productDtoToEntity)
+            .flatMap(productRepository::save).map(AppUtil::entityToProductDto)));
   }
 
   /**
