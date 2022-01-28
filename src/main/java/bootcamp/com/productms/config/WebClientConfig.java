@@ -19,7 +19,7 @@ public class WebClientConfig implements WebFluxConfigurer {
   @Bean
   public WebClient getWebClient() {
     return WebClient.builder()
-      .baseUrl("http://localhost:8081")
+      .baseUrl("http://20.127.248.66:8081")
       .defaultHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
       .build();
   }
